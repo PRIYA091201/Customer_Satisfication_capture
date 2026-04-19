@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase PostgreSQL Demo API Tester</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+        .endpoint {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+        }
+        .endpoint h2 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .result {
+            margin-top: 16px;
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            overflow: auto;
+            max-height: 300px;
+            font-family: monospace;
+        }
+        .input-group {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        .badge-get {
+            background: #10b981;
+            color: white;
+        }
+        .badge-post {
+            background: #3b82f6;
+            color: white;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Supabase PostgreSQL Demo API Tester</h1>
+        <div>
+            <button id="checkHealth">Check Health</button>
+        </div>
+    </div>
+    
+    <div id="health-result" style="display: none;" class="result"></div>
+
+    <div class="endpoint">
+        <h2><span class="badge badge-get">GET</span> Simple Query</h2>
+        <p>Executes a simple query to retrieve the first 5 feedback records.</p>
+        <button id="simpleQuery">Execute Simple Query</button>
+        <div id="simple-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="endpoint">
+        <h2><span class="badge badge-get">GET</span> Filtered Query</h2>
+        <p>Returns feedback with ratings greater than or equal to the specified value.</p>
+        <div class="input-group">
+            <label for="minRating">Minimum Rating:</label>
+            <input type="number" id="minRating" min="1" max="5" value="4" />
+        </div>
+        <button id="filteredQuery">Execute Filtered Query</button>
+        <div id="filtered-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="endpoint">
+        <h2><span class="badge badge-post">POST</span> Create Record</h2>
+        <p>Creates a new feedback record.</p>
+        <div class="input-group">
+            <label for="customerName">Customer Name:</label>
+            <input type="text" id="customerName" value="Demo Customer" />
+        </div>
+        <div class="input-group">
+            <label for="rating">Rating:</label>
+            <input type="number" id="rating" min="1" max="5" value="5" />
+        </div>
+        <div class="input-group">
+            <label for="comments">Comments:</label>
+            <textarea id="comments" rows="3">This is a demo comment from the API tester.</textarea>
+        </div>
+        <button id="createRecord">Create Record</button>
+        <div id="create-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="endpoint">
+        <h2><span class="badge badge-post">POST</span> Batch Operation</h2>
+        <p>Creates 5 random feedback records in a single batch operation.</p>
+        <button id="batchDemo">Execute Batch Operation</button>
+        <div id="batch-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="endpoint">
+        <h2><span class="badge badge-get">GET</span> Aggregation Query</h2>
+        <p>Calculates statistics about feedback ratings.</p>
+        <button id="aggregationDemo">Execute Aggregation Query</button>
+        <div id="aggregation-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="endpoint">
+        <h2><span class="badge badge-post">POST</span> Transaction Demo</h2>
+        <p>Demonstrates a transaction by deleting and creating multiple records.</p>
+        <button id="transactionDemo">Execute Transaction Demo</button>
+        <div id="transaction-result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        const apiBaseUrl = window.location.protocol + '//' + window.location.host + '/api/demo';
+        const healthUrl = window.location.protocol + '//' + window.location.host + '/health';
+
+        // Helper function to format JSON
+        function formatJSON(json) {
+            return JSON.stringify(json, null, 2);
+        }
+
+        // Helper function to show results
+        function showResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.textContent = formatJSON(data);
+            element.style.display = 'block';
+        }
+
+        // Check Health
+        document.getElementById('checkHealth').addEventListener('click', async () => {
+            try {
+                const response = await fetch(healthUrl);
+                const data = await response.json();
+                showResult('health-result', data);
+            } catch (error) {
+                showResult('health-result', { error: error.message });
+            }
+        });
+
+        // Simple Query
+        document.getElementById('simpleQuery').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${apiBaseUrl}/simple`);
+                const data = await response.json();
+                showResult('simple-result', data);
+            } catch (error) {
+                showResult('simple-result', { error: error.message });
+            }
+        });
+
+        // Filtered Query
+        document.getElementById('filteredQuery').addEventListener('click', async () => {
+            try {
+                const minRating = document.getElementById('minRating').value;
+                const response = await fetch(`${apiBaseUrl}/filtered?minRating=${minRating}`);
+                const data = await response.json();
+                showResult('filtered-result', data);
+            } catch (error) {
+                showResult('filtered-result', { error: error.message });
+            }
+        });
+
+        // Create Record
+        document.getElementById('createRecord').addEventListener('click', async () => {
+            try {
+                const name = document.getElementById('customerName').value;
+                const rating = document.getElementById('rating').value;
+                const comments = document.getElementById('comments').value;
+                
+                const response = await fetch(`${apiBaseUrl}/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, rating, comments }),
+                });
+                
+                const data = await response.json();
+                showResult('create-result', data);
+            } catch (error) {
+                showResult('create-result', { error: error.message });
+            }
+        });
+
+        // Batch Operation
+        document.getElementById('batchDemo').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${apiBaseUrl}/batch`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                showResult('batch-result', data);
+            } catch (error) {
+                showResult('batch-result', { error: error.message });
+            }
+        });
+
+        // Aggregation Query
+        document.getElementById('aggregationDemo').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${apiBaseUrl}/aggregation`);
+                const data = await response.json();
+                showResult('aggregation-result', data);
+            } catch (error) {
+                showResult('aggregation-result', { error: error.message });
+            }
+        });
+
+        // Transaction Demo
+        document.getElementById('transactionDemo').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${apiBaseUrl}/transaction`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                showResult('transaction-result', data);
+            } catch (error) {
+                showResult('transaction-result', { error: error.message });
+            }
+        });
+    </script>
+</body>
+</html>

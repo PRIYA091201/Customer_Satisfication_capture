@@ -1,0 +1,46 @@
+{
+  "name": "open_spec_code",
+  "version": "1.0.0",
+  "description": "TypeScript Node.js API with Supabase PostgreSQL integration and demo API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "db:migrate": "ts-node src/scripts/run-migrations.ts",
+    "db:setup": "ts-node -e \"require('./src/db/migration').runMigrations()\"",
+    "db:sample": "ts-node src/scripts/import-sample-data.ts",
+    "db:export": "ts-node -e \"require('./src/utils/batch-operations').exportTableToCsv(require('./src/types/database.types').Tables.CUSTOMER_FEEDBACK, './exported_feedback.csv')\"",
+    "setup": "node setup-db.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PRIYA091201/Customer_Satisfication_capture.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/PRIYA091201/Customer_Satisfication_capture/issues"
+  },
+  "homepage": "https://github.com/PRIYA091201/Customer_Satisfication_capture#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/json2csv": "^5.0.7",
+    "@types/node": "^25.6.0",
+    "@types/ws": "^8.18.1",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "json2csv": "^6.0.0-alpha.2",
+    "ws": "^8.20.0"
+  }
+}
